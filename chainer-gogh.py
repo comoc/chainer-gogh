@@ -14,7 +14,6 @@ from chainer.functions import caffe
 from chainer import Variable, optimizers
 
 from models import *
-
 import pickle
 
 
@@ -37,7 +36,7 @@ def image_resize(img_file, width):
     orig_w, orig_h = gogh.size[0], gogh.size[1]
     if orig_w>orig_h:
         new_w = width
-        new_h = width*orig_h/orig_w
+        new_h = int(width*orig_h/orig_w)
         gogh = np.asarray(gogh.resize((new_w,new_h)))[:,:,:3].transpose(2, 0, 1)[::-1].astype(np.float32)
         gogh = gogh.reshape((1,3,new_h,new_w))
         print("image resized to: ", gogh.shape)
@@ -45,7 +44,7 @@ def image_resize(img_file, width):
         hoge[0,:,width-new_h:,:] = gogh[0,:,:,:]
         gogh = subtract_mean(hoge)
     else:
-        new_w = width*orig_w/orig_h
+        new_w = int(width*orig_w/orig_h)
         new_h = width
         gogh = np.asarray(gogh.resize((new_w,new_h)))[:,:,:3].transpose(2, 0, 1)[::-1].astype(np.float32)
         gogh = gogh.reshape((1,3,new_h,new_w))
@@ -90,8 +89,8 @@ class Clip(chainer.Function):
     def forward(self, x):
         x = x[0]
         ret = cuda.elementwise(
-            'T x','T ret',
-            '''
+                'T x','T ret',
+                '''
                 ret = x<-120?-120:(x>136?136:x);
             ''','clip')(x)
         return ret
@@ -126,10 +125,10 @@ def generate_image(img_orig, img_style, width, nw, nh, max_iter, lr, img_gen=Non
             L += L1+L2
 
             if i%100==0:
-                print i,l,L1.data,L2.data
+                print(i,l,L1.data,L2.data)
 
         L.backward()
-	img_gen.W.grad = x.grad
+        img_gen.W.grad = x.grad
         optimizer.update()
 
         tmp_shape = x.data.shape
@@ -145,25 +144,25 @@ def generate_image(img_orig, img_style, width, nw, nh, max_iter, lr, img_gen=Non
 
 
 parser = argparse.ArgumentParser(
-    description='A Neural Algorithm of Artistic Style')
+        description='A Neural Algorithm of Artistic Style')
 parser.add_argument('--model', '-m', default='nin',
-                    help='model file (nin, vgg, i2v, googlenet)')
+        help='model file (nin, vgg, i2v, googlenet)')
 parser.add_argument('--orig_img', '-i', default='orig.png',
-                    help='Original image')
+        help='Original image')
 parser.add_argument('--style_img', '-s', default='style.png',
-                    help='Style image')
+        help='Style image')
 parser.add_argument('--out_dir', '-o', default='output',
-                    help='Output directory')
+        help='Output directory')
 parser.add_argument('--gpu', '-g', default=-1, type=int,
-                    help='GPU ID (negative value indicates CPU)')
+        help='GPU ID (negative value indicates CPU)')
 parser.add_argument('--iter', default=5000, type=int,
-                    help='number of iteration')
+        help='number of iteration')
 parser.add_argument('--lr', default=4.0, type=float,
-                    help='learning rate')
+        help='learning rate')
 parser.add_argument('--lam', default=0.005, type=float,
-                    help='original image weight / style weight ratio')
+        help='original image weight / style weight ratio')
 parser.add_argument('--width', '-w', default=435, type=int,
-                    help='image width, height')
+        help='image width, height')
 args = parser.parse_args()
 
 try:
@@ -188,9 +187,9 @@ elif 'i2v' in args.model:
 elif 'googlenet' in args.model:
     nn = GoogLeNet()
 else:
-    print 'invalid model name. you can use (nin, vgg, i2v, googlenet)'
+    print('invalid model name. you can use (nin, vgg, i2v, googlenet)')
 if args.gpu>=0:
-	nn.model.to_gpu()
+    nn.model.to_gpu()
 
 W = args.width
 img_content,nw,nh = image_resize(args.orig_img, W)
